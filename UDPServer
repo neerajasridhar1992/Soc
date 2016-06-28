@@ -1,0 +1,71 @@
+/*
+This is the program for a simple UDP Server
+*/
+#include<stdio.h> //printf
+#include<string.h> //memset
+#include<stdlib.h> //exit(0);
+#include<arpa/inet.h>
+#include<sys/socket.h>
+ /* The below defines the maximum length of the buffer */
+#define MAXBUFFLEN 512  
+/*The port on which to receive data from the client */
+#define SERVERPORT 8888  
+ 
+void die(char *s)
+{
+    perror(s);
+    exit(1);
+}
+ 
+int main(void)
+{
+    struct sockaddr_in simple, soc_udp;
+     
+    int s, i, slen = sizeof(soc_udp) , recv_len;
+    char buf[MAXBUFFLEN];
+     
+    //To create a UDP Server socket
+    if ((s=socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == -1)
+    {
+        die("socket");
+    }
+     
+    // To pad with zeroes
+    memset((char *) &simple, 0, sizeof(simple));
+     
+    simple.sin_family = AF_INET;
+    simple.sin_port = htons(SERVERPORT);
+    simple.sin_addr.s_addr = htonl(INADDR_ANY);
+     
+    //To bind this socket to a port
+    if( bind(s , (struct sockaddr*)&simple, sizeof(simple) ) == -1)
+    {
+        die("bind");
+    }
+     
+    //To listen to data
+    while(1)
+    {
+        printf("Waiting for information ...");
+        fflush(stdout);
+         
+        //The blocking call to receive data:
+        if ((recv_len = recvfrom(s, buf, MAXBUFFLEN, 0, (struct sockaddr *) &soc_udp, &slen)) == -1)
+        {
+            die("recvfrom()");
+        }
+         
+        //this is to print about the client, and also the data received from the client
+        printf("Received packet from %s:%d\n", inet_ntoa(soc_udp.sin_addr), ntohs(soc_udp.sin_port));
+        printf("Data: %s\n" , buf);
+         
+        //To send a reply to the client
+        if (sendto(s, buf, recv_len, 0, (struct sockaddr*) &soc_udp, slen) == -1)
+        {
+            die("sendto()");
+        }
+    }
+ 
+    close(s);
+    return 0;
+}
